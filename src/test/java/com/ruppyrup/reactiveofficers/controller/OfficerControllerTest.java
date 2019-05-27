@@ -85,4 +85,22 @@ public class OfficerControllerTest {
 
     }
 
+    @Test
+    public void testPutOfficer() {
+        Officer officer = new Officer(Rank.ADMIRAL, "James Tibirius", "Kirk");
+
+        client.put().uri("/officers/{id}", officers.get(0).getId())
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .accept(MediaType.APPLICATION_JSON_UTF8)
+                .body(Mono.just(officer), Officer.class)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.APPLICATION_JSON_UTF8)
+                .expectBody()
+                .jsonPath("$.id").isNotEmpty()
+                .jsonPath("$.rank").isEqualTo("ADMIRAL")
+                .jsonPath("$.first").isEqualTo("James Tibirius")
+                .jsonPath("$.last").isEqualTo("Kirk")
+                .consumeWith(System.out::println);
+    }
 }

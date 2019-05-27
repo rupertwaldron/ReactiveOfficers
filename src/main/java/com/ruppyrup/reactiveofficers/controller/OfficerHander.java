@@ -2,17 +2,17 @@ package com.ruppyrup.reactiveofficers.controller;
 
 import com.ruppyrup.reactiveofficers.dao.OfficerRepository;
 import com.ruppyrup.reactiveofficers.entities.Officer;
-import org.springframework.http.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
-import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import static org.springframework.web.reactive.function.BodyInserters.fromObject;
-import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
+@Slf4j
 @Component
 public class OfficerHander {
     private OfficerRepository repository;
@@ -23,6 +23,7 @@ public class OfficerHander {
 
     public Mono<ServerResponse> getOfficer(ServerRequest serverRequest) {
         String id = serverRequest.pathVariable("id");
+        log.error("Get Officer {}", id);
         Mono<ServerResponse> notFound = ServerResponse.notFound().build();
 
         Mono<Officer> officerMono = repository.findById(id);
@@ -34,7 +35,9 @@ public class OfficerHander {
     }
 
     public Mono<ServerResponse> listOfficers(ServerRequest serverRequest) {
-        return ok()
+        log.error("List Officers");
+        return ServerResponse
+                .ok() // we got the response 200
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(repository.findAll(), Officer.class);
     }
@@ -47,10 +50,11 @@ public class OfficerHander {
                         .body(repository.save(officer), Officer.class));
     }
 
-    public Mono<ResponseEntity<Officer>> updateOfficer(ServerRequest serverRequest) {
+    public Mono<ServerResponse> updateOfficer(ServerRequest serverRequest) {
         String id = serverRequest.pathVariable("id");
+        log.error("Update Officer {}", id);
+
         Mono<Officer> officerMono = serverRequest.bodyToMono(Officer.class);
-        Officer officer = officerMono.toProcessor().peek();
 
         Mono<ServerResponse> notFound = ServerResponse.notFound().build();
 
@@ -62,6 +66,7 @@ public class OfficerHander {
                     return repository.save(existingOfficer);
                 })
                 .map(updateOfficer -> ServerResponse.status(HttpStatus.ACCEPTED));
+        return ServerResponse.status(HttpStatus.I_AM_A_TEAPOT).build();
 
     }
 }

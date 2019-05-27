@@ -4,11 +4,14 @@ package com.ruppyrup.reactiveofficers.controller;
 import com.ruppyrup.reactiveofficers.dao.OfficerRepository;
 import com.ruppyrup.reactiveofficers.entities.Officer;
 import com.ruppyrup.reactiveofficers.entities.Rank;
+import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -18,6 +21,7 @@ import reactor.core.publisher.Mono;
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class OfficerHandlerTest {
@@ -36,7 +40,7 @@ public class OfficerHandlerTest {
     );
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         repository.deleteAll()
                 .thenMany(Flux.fromIterable(officers))
                 .flatMap(repository::save)
@@ -59,11 +63,14 @@ public class OfficerHandlerTest {
 
     @Test
     public void testGetOfficer() {
-        client.get().uri("/route/{id}", officers.get(0).getId())
+        Officer officer = repository.save(new Officer(Rank.ENSIGN, "Wesley", "Crusher")).block();
+
+        client.get().uri("/route/{id}", officer.getId())
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(Officer.class)
-                .consumeWith(System.out::println);
+                .consumeWith(response ->
+                        Assertions.assertThat(response.getResponseBody()).isNotNull());
     }
 
     @Test
@@ -82,7 +89,25 @@ public class OfficerHandlerTest {
                 .jsonPath("$.first").isEqualTo("Hikaru")
                 .jsonPath("$.last").isEqualTo("Sulu")
                 .consumeWith(System.out::println);
+    }
 
+    @Test
+    public void testPutOfficer() {
+        Officer officer = new Officer(Rank.ADMIRAL, "James Tibirius", "Kirk");
+
+        client.put().uri("/route/{id}", officers.get(0).getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(Mono.just(officer), Officer.class)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.I_AM_A_TEAPOT)
+                .expectHeader().contentType(MediaType.APPLICATION_JSON_UTF8)
+                .expectBody()
+                .jsonPath("$.id").isNotEmpty()
+                .jsonPath("$.rank").isEqualTo("ADMIRAL")
+                .jsonPath("$.first").isEqualTo("James Tibirius")
+                .jsonPath("$.last").isEqualTo("Kirk")
+                .consumeWith(System.out::println);
     }
 
 }

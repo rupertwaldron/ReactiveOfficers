@@ -21,7 +21,7 @@ public class RouterConfig {
                         handler::listOfficers)
                 .andRoute(POST("/route").and(accept(MediaType.APPLICATION_JSON)),
                         handler::createOfficer)
-                .andRoute(PUT("/route{id}").and(accept(MediaType.APPLICATION_JSON)),
+                .andRoute(PUT("/route/{id}").and(accept(MediaType.APPLICATION_JSON)),
                         handler::updateOfficer);
     }
 }
